@@ -1,7 +1,7 @@
 import CytoscapeComponent from "react-cytoscapejs";
 import { toast } from "@/components/ui/use-toast";
 import cytoscape, { ElementDefinition, EventObject, NodeDataDefinition } from "cytoscape";
-import { RefAttributes, useRef, useState, useImperativeHandle } from "react";
+import { RefAttributes, useRef, useState, useImperativeHandle, Ref } from "react";
 import { signOut } from "next-auth/react";
 import fcose from 'cytoscape-fcose';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -101,7 +101,7 @@ export function GraphView({ graph, darkmode, ref }: GraphViewProps) {
     const chartRef = useRef<cytoscape.Core | null>(null)
     const dataPanel = useRef<ImperativePanelHandle>(null)
 
-    useImperativeHandle(ref, () => ({
+    useImperativeHandle(ref as Ref<GraphViewRef>, () => ({
         expand: (elements) => {
             const chart = chartRef.current
             if (chart) {
@@ -190,6 +190,24 @@ export function GraphView({ graph, darkmode, ref }: GraphViewProps) {
 
                         // Listen to the click event on nodes for showing node properties
                         cy.on('tap', 'node', handleTap);
+
+                        cy.on('mouseover', 'node', (evt: EventObject) => {
+                            const node = evt.target;
+                            node.style({
+                                width: "25rem",
+                                height: "25rem",
+                                "text-max-width": "25rem",
+                            })
+                        });
+
+                        cy.on('mouseout', 'node', (evt: EventObject) => {
+                            const node = evt.target;
+                            node.style({
+                                height: "10rem",
+                                width: "10rem",
+                                "text-max-width": "10rem",
+                            });
+                        });
                     }}
                     stylesheet={getStyle(darkmode)}
                     elements={graph.Elements}
