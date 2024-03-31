@@ -20,19 +20,20 @@ import {
 } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
-
+import Dropzone from "react-dropzone"
+import { Label } from "@/components/ui/label"
 
 /* eslint-disable react/require-default-props */
 interface ComboboxProps {
   className?: string,
   type?: string,
   options: string[],
-  addOption?: Dispatch<string>|null,
+  addOption?: Dispatch<string> | null,
   selectedValue: string,
   setSelectedValue: Dispatch<string>
 }
 
-export default function Combobox({ className='', type='', options, addOption=null, selectedValue, setSelectedValue }: ComboboxProps) {
+export default function Combobox({ className = '', type = '', options, addOption = null, selectedValue, setSelectedValue }: ComboboxProps) {
   const [open, setOpen] = useState(false)
   const inputRef = createRef<HTMLInputElement>()
 
@@ -51,6 +52,18 @@ export default function Combobox({ className='', type='', options, addOption=nul
     if (event.key === "Enter") {
       onAddOption();
     }
+  }
+
+  const onDrop = async (acceptedFiles: File[]) => {
+    const data = new FormData()
+    data.set(`file`, acceptedFiles[0])
+    fetch("api/upload", {
+      method: "POST",
+      body: data
+    }).then(res => res.json()).then(jsonData => {
+      addOption = null
+      console.log(jsonData)
+    })
   }
 
   const entityType = type ?? ""
@@ -103,8 +116,22 @@ export default function Combobox({ className='', type='', options, addOption=nul
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Create a new {entityType}?</DialogTitle>
-                    <DialogDescription>
+                    <DialogDescription className="flex flex-col gap-4">
                       <Input type="text" ref={inputRef} id="create" name="create" onKeyDown={handleKeyDown} placeholder={`${entityType} name ...`} />
+                      <Dropzone onDrop={(acceptedFiles) => onDrop(acceptedFiles)} accept={{ 'text/csv': [] }}>
+                        {({ getRootProps, getInputProps }) => (
+                          <>
+                            <Label htmlFor="dropzone">Import graph data: </Label>
+                            {/* eslint-disable-next-line react/jsx-props-no-spreading */}
+                            <div id="dropzone" {...getRootProps()} className="border-2 border-dashed border-gray-800 rounded-md p-8 text-center cursor-pointer">
+                              {/* eslint-disable-next-line react/jsx-props-no-spreading */}
+                              <input {...getInputProps()} />
+                              {/* eslint-disable-next-line react/no-unescaped-entities */}
+                              <p className="text-gray-600">Drag 'n' drop some files here, or click to select files</p>
+                            </div>
+                          </>
+                        )}
+                      </Dropzone>
                     </DialogDescription>
                   </DialogHeader>
                   <Button className="p-4" type="submit" onClick={onAddOption}>Create</Button>
