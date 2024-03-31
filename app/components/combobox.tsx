@@ -34,11 +34,24 @@ interface ComboboxProps {
 }
 
 export default function Combobox({ className = '', type = '', options, addOption = null, selectedValue, setSelectedValue }: ComboboxProps) {
+
+  const [file, setFile] = useState<File | null>(null)
   const [open, setOpen] = useState(false)
   const inputRef = createRef<HTMLInputElement>()
+  const entityType = type ?? ""
 
-  // read the text in the create input box and add it to the list of options
   const onAddOption = () => {
+    if (file) {
+      const formData = new FormData()
+      formData.set(`file`, file)
+      fetch("api/upload", {
+        method: "POST",
+        body: formData
+      }).then(res => res.json()).then(data => {
+        addOption = null
+        console.log(data)
+      })
+    }
     setOpen(false)
     if (!inputRef.current?.value) {
       return
@@ -48,25 +61,6 @@ export default function Combobox({ className = '', type = '', options, addOption
     }
   }
 
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === "Enter") {
-      onAddOption();
-    }
-  }
-
-  const onDrop = async (acceptedFiles: File[]) => {
-    const data = new FormData()
-    data.set(`file`, acceptedFiles[0])
-    fetch("api/upload", {
-      method: "POST",
-      body: data
-    }).then(res => res.json()).then(jsonData => {
-      addOption = null
-      console.log(jsonData)
-    })
-  }
-
-  const entityType = type ?? ""
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -117,10 +111,10 @@ export default function Combobox({ className = '', type = '', options, addOption
                   <DialogHeader>
                     <DialogTitle>Create a new {entityType}?</DialogTitle>
                     <DialogDescription className="flex flex-col gap-4">
-                      <Input type="text" ref={inputRef} id="create" name="create" onKeyDown={handleKeyDown} placeholder={`${entityType} name ...`} />
-                      <Dropzone onDrop={(acceptedFiles) => onDrop(acceptedFiles)} accept={{ 'text/csv': [] }}>
+                      <Input type="text" ref={inputRef} id="create" name="create" onKeyDown={(e) => e.key === "Enter" && onAddOption()} placeholder={`${entityType} name ...`} />
+                      <Dropzone onDrop={(acceptedFiles) => setFile(acceptedFiles[0])} accept={{ 'text/csv': [] }}>
                         {({ getRootProps, getInputProps }) => (
-                          <>
+                          <div>
                             <Label htmlFor="dropzone">Import graph data: </Label>
                             {/* eslint-disable-next-line react/jsx-props-no-spreading */}
                             <div id="dropzone" {...getRootProps()} className="border-2 border-dashed border-gray-800 rounded-md p-8 text-center cursor-pointer">
@@ -129,7 +123,7 @@ export default function Combobox({ className = '', type = '', options, addOption
                               {/* eslint-disable-next-line react/no-unescaped-entities */}
                               <p className="text-gray-600">Drag 'n' drop some files here, or click to select files</p>
                             </div>
-                          </>
+                          </div>
                         )}
                       </Dropzone>
                     </DialogDescription>
